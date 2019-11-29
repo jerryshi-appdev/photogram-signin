@@ -1,11 +1,13 @@
 class PhotosController < ApplicationController
+  skip_before_action(:force_sign_in, :only => :index )
+
   def index
     @photos = Photo.all
     render({ :template => "photos/all_photos.html.erb"})
   end
 
   def create
-    user_id = params.fetch("input_owner_id")
+    user_id = session[:user_id]
     image = params.fetch("input_image")
     caption = params.fetch("input_caption")
     photo = Photo.new

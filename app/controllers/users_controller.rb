@@ -1,4 +1,44 @@
 class UsersController < ApplicationController
+  skip_before_action(:force_sign_in, {:only => [:registration_form, :create, :sign_in, :add_cookie]})
+  
+  def registration_form
+    render("users/sign_up_form.html.erb")
+  end
+
+  def sign_out
+    #session[:user_id] = nil
+
+    reset_session
+
+    redirect_to("/", { :notice => "Signed out successfully."})
+  end
+
+  def sign_in
+    render("users/sign_in_form.html.erb")
+  end
+
+  def add_cookie
+    the_username = params.fetch(:input_username)
+
+    the_user = User.where({ :username => the_username}).at(0)
+
+    the_inputted_password = params.fetch(:input_password)
+
+    if the_user != nil
+      
+      they_are_real = the_user.authenticate(the_inputted_password)
+
+      if they_are_real == false
+        redirect_to("/sign_in", { :alert => "Incorrect password. Please try again."})
+      else
+        session[:user_id] = the_user.id
+        redirect_to("/", { :notice => "Signed in successfully."})
+      end
+    else
+      redirect_to("/sign_in", {:alert => "Incorrect username. Please try again."})
+    end
+  end
+
   def index
     @users = User.all.order({ :username => :asc })
 
@@ -35,17 +75,27 @@ class UsersController < ApplicationController
     user.private = params.fetch(:input_private, nil)
     user.likes_count = params.fetch(:input_likes_count, 0)
     user.comments_count = params.fetch(:input_comments_count, 0)
+    user.password = params.fetch(:input_password)
+    user.password_confirmation = params.fetch(:input_password_confirmation)
 
-    user.save
+    save_status = user.save
+    
+    if save_status == true
 
-    respond_to do |format|
-      format.json do
-        render({ :json => @user.as_json })
+      session[:user_id] = user.id
+
+      respond_to do |format|
+        format.json do
+          render({ :json => @user.as_json })
+        end
+
+        format.html do
+          redirect_to("/users/#{user.username}")
+        end
       end
-
-      format.html do
-        redirect_to("/users/#{user.username}")
-      end
+    
+    else
+      redirect_to("/sign_up", { :alert => "Something went wrong. Please try again."})
     end
   end
 

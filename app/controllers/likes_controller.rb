@@ -1,4 +1,5 @@
 class LikesController < ApplicationController
+
   def index
     likes = Like.all.order({ :created_at => :asc })
 
@@ -14,8 +15,8 @@ class LikesController < ApplicationController
 
   def create
     like = Like.new
-    like.fan_id = params.fetch(:input_fan_id, nil)
-    like.photo_id = params.fetch(:input_photo_id, nil)
+    like.fan_id = @current_user.id
+    like.photo_id = params.fetch(:input_photo_id)
     like.save
 
     respond_to do |format|
@@ -43,6 +44,14 @@ class LikesController < ApplicationController
     like = Like.find(params.fetch(:the_like_id)).destroy
     like.destroy
 
-    render({ :json => like.as_json })
+    respond_to do |format|
+      format.json do
+        render({ :json => like.as_json })
+      end
+
+      format.html do
+        redirect_to("/photos/#{like.photo_id}")
+      end
+    end
   end
 end
